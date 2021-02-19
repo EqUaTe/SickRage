@@ -1,94 +1,36 @@
-# -*- coding: utf-8 -*
-"""
-Use setup tools to install sickrage
-"""
-import os
+#!/usr/bin/env python3
+import sys
+from pathlib import Path
 
-from setuptools import find_packages, setup
-from requirements.sort import file_to_dict
+from setuptools import setup
 
-try:
-    from babel.messages import frontend as babel
-except ImportError:
-    babel = None
-
-ROOT = os.path.realpath(os.path.join(os.path.dirname(__file__)))
-
-with open(os.path.join(ROOT, 'readme.md'), 'r') as r:
-    long_description = r.read()
+info_dict = {'commands': {}}
 
 
-def get_requirements(rel_file_path):
-    file_path = os.path.join(ROOT, rel_file_path)
-    data = file_to_dict(file_path)
-    if data is False:
-        print('get_requirements failed')
-        return []
-    return [pkg['install'] for pkg in data
-            if pkg['active'] and pkg['install']]
+with open(Path('requirements.txt').absolute()) as fp:
+    info_dict['install_requires'] = [line for line in fp.readlines() if not line.startswith('#') and not line.startswith('git+')]
 
-requirements = get_requirements('requirements/requirements.txt')
-commands = {}
-if babel:
-    commands.update({
-        'compile_catalog': babel.compile_catalog,
-        'extract_messages': babel.extract_messages,
-        'init_catalog': babel.init_catalog,
-        'update_catalog': babel.update_catalog
-    })
 
-setup(
-    name="sickrage",
-    version="0.0.1",
-
-    description="Automatic Video Library Manager for TV Shows",
-    long_description=long_description,
-
-    url='https://sickrage.github.io',
-    download_url='https://github.com/SickRage/SickRage.git',
-
-    author='miigotu',
-    author_email='miigotu@gmail.com',
-
-    license='GPLv2',
-
-    packages=find_packages(),
-    # install_requires=requirements,  # Commented-out for now
-    install_requires=[
-        'pytz',
-        'requests',
-        'mako',
-        'configobj'
-    ],
-
-    test_suite="tests",
-    tests_require=[
-        'coveralls',
-        'nose',
-        'rednose',
-        'mock',
-        'vcrpy-unittest',
-        'babel',
-        'flake8-coding',
-        'isort'
-    ],
-
-    classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: System Administrators',
-        'Operating System :: OS Independent',
-        'Topic :: Multimedia :: Video',
-    ],
-
-    cmdclass=commands,
-
-    message_extractors={
-        'gui': [
-            ('**/views/**.mako', 'mako', {'input_encoding': 'utf-8'}),
-            ('**/js/*.min.js', 'ignore', None),
-            ('**/js/*.js', 'javascript', {'input_encoding': 'utf-8'})
+if 'setup.py' in sys.argv[0]:
+    setup(
+        packages=['sickchill'],
+        install_requires=info_dict['install_requires'],
+        dependency_links=[
+            'https://github.com/alberanid/imdbpy/tarball/bfdbdd0#egg=imdbpy-2020.09.20'
         ],
-        'sickrage': [('**.py', 'python', None)],
-        'sickbeard': [('**.py', 'python', None)],
-    },
-)
+        cmdclass=info_dict['commands'],
+        message_extractors={
+            'gui': [
+                ('**/views/**.mako', 'mako', {'input_encoding': 'utf-8'}),
+                ('**/js/*.min.js', 'ignore', None),
+                ('**/js/*.js', 'javascript', {'input_encoding': 'utf-8'})
+            ],
+            'sickchill': [('**.py', 'python', None)],
+        },
+        include_package_data=True,
+        use_scm_version={
+            'write_to': 'sickchill/version.py',
+            'write_to_template': '__version__ = "{version}"',
+            'tag_regex': r'^(?P<prefix>v)?(?P<version>[^\+]+)(?P<suffix>.*)?$'
+        }
+    )

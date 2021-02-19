@@ -1,54 +1,26 @@
-# coding=UTF-8
-# Author: Dustyn Gibson <miigotu@gmail.com>
-# URL: http://github.come/SickRage/SickRage
-#
-# This file is part of SickRage.
-#
-# SickRage is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# SickRage is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with SickRage. If not, see <http://www.gnu.org/licenses/>.
-
-# pylint: disable=line-too-long
 
 """
 Test SNI and SSL
 """
 
-from __future__ import print_function, unicode_literals
-
-import os.path
-import sys
 import unittest
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '../lib')))
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import certifi
+import requests
 
-from sickbeard import ex
-import certifi  # pylint: disable=import-error
-import requests  # pylint: disable=import-error
-import sickbeard.providers as providers
+from sickchill.oldbeard import providers as providers
 
 
 def generator(_provider):
     """
     Generate tests for each provider
 
-    :param test_strings: to generate tests from
+    :param _provider: to generate tests from
     :return: test
     """
     def _connectivity_test():
         """
         Generate tests
-        :param self:
         :return: test to run
         """
         if not _provider.url:
@@ -56,15 +28,17 @@ def generator(_provider):
             return
 
         try:
-            requests.head(_provider.url, verify=certifi.old_where(), timeout=10)
+            requests.head(_provider.url, verify=certifi.where(), timeout=10)
         except requests.exceptions.SSLError as error:
             if 'certificate verify failed' in str(error):
                 print('Cannot verify certificate for {0}'.format(_provider.name))
             else:
-                print('SSLError on {0}: {1}'.format(_provider.name, ex(error.message)))
+                print('SSLError on {0}: {1}'.format(_provider.name, str(error)))
                 raise
         except requests.exceptions.Timeout:
             print('Provider timed out')
+        except requests.exceptions.RequestException:
+            raise
 
     return _connectivity_test
 

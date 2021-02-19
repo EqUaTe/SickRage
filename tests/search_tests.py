@@ -1,45 +1,11 @@
-#!/usr/bin/env python2.7
-# coding=UTF-8
-# Author: Dennis Lutter <lad1337@gmail.com>
-# URL: https://sickrage.github.io
-#
-# This file is part of SickRage.
-#
-# SickRage is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# SickRage is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with SickRage. If not, see <http://www.gnu.org/licenses/>.
-
-# pylint: disable=line-too-long
-
-"""
-Test searches
-"""
-
-from __future__ import print_function, unicode_literals
-import os.path
-import sys
 import unittest
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '../lib')))
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from sickbeard.tv import TVEpisode, TVShow
-import sickbeard
-import sickbeard.common as common
-from sickrage.providers.GenericProvider import GenericProvider
-import tests.test_lib as test
-
-import six
-
+import sickchill.oldbeard.providers
+from sickchill import settings
+from sickchill.oldbeard import common as common
+from sickchill.providers.GenericProvider import GenericProvider
+from sickchill.tv import TVEpisode, TVShow
+from tests import test_lib as test
 
 TESTS = {
     "Game of Thrones": {
@@ -50,12 +16,12 @@ TESTS = {
 }
 
 
-class SearchTest(test.SickbeardTestDBCase):
+class SearchTest(test.SickChillTestDBCase):
     """
     Test search
     """
     def __init__(self, something):
-        super(SearchTest, self).__init__(something)
+        super().__init__(something)
 
 
 def generator(cur_data, cur_name, cur_provider):
@@ -76,7 +42,7 @@ def generator(cur_data, cur_name, cur_provider):
         show.name = cur_name
         show.quality = common.ANY | common.Quality.UNKNOWN | common.Quality.RAWHDTV
         show.saveToDB()
-        sickbeard.showList.append(show)
+        settings.showList.append(show)
 
         for ep_number in cur_data["e"]:
             episode = TVEpisode(show, cur_data["s"], ep_number)
@@ -89,8 +55,8 @@ def generator(cur_data, cur_name, cur_provider):
             episode.saveToDB()
 
             cur_provider.show = show
-            season_strings = cur_provider._get_season_search_strings(episode)  # pylint: disable=protected-access
-            episode_strings = cur_provider._get_episode_search_strings(episode)  # pylint: disable=protected-access
+            season_strings = cur_provider.get_season_search_strings(episode)
+            episode_strings = cur_provider.get_episode_search_strings(episode)
 
             fail = False
             cur_string = ''
@@ -121,12 +87,12 @@ def generator(cur_data, cur_name, cur_provider):
             if not cur_provider.public:
                 continue
 
-            items = cur_provider.search(search_strings)  # pylint: disable=protected-access
+            items = cur_provider.search(search_strings)
             if not items:
                 print("No results from cur_provider?")
                 continue
 
-            title, url = cur_provider._get_title_and_url(items[0])  # pylint: disable=protected-access
+            title, url = cur_provider._get_title_and_url(items[0])
             for word in show.name.split(" "):
                 if not word.lower() in title.lower():
                     print("Show cur_name not in title: {0}. URL: {1}".format(title, url))
@@ -137,7 +103,7 @@ def generator(cur_data, cur_name, cur_provider):
                 continue
 
             quality = cur_provider.get_quality(items[0])
-            size = cur_provider._get_size(items[0])  # pylint: disable=protected-access
+            size = cur_provider._get_size(items[0])
 
             if not show.quality & quality:
                 print("Quality not in common.ANY, {0!r} {1}".format(quality, size))
@@ -152,10 +118,10 @@ if __name__ == '__main__':
     print("######################################################################")
     # create the test methods
     for forceSearch in (True, False):
-        for name, data in six.iteritems(TESTS):
+        for name, data in TESTS.items():
             filename = name.replace(' ', '_')
 
-            for provider in sickbeard.providers.sortedProviderList():
+            for provider in sickchill.oldbeard.providers.sortedProviderList():
                 if provider.provider_type == GenericProvider.TORRENT:
                     if forceSearch:
                         test_name = 'test_manual_{0}_{1}_{2}'.format(filename, data["tvdbid"], provider.name)

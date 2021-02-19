@@ -1,43 +1,17 @@
-# coding=UTF-8
-# Author: Dennis Lutter <lad1337@gmail.com>
-# URL: https://sickrage.github.io
-#
-# This file is part of SickRage.
-#
-# SickRage is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# SickRage is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with SickRage. If not, see <http://www.gnu.org/licenses/>.
-
 """
 Test post processing
 """
 
-from __future__ import print_function, unicode_literals
-
 import os.path
 import shutil
-import sys
 import unittest
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '../lib')))
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-import sickbeard
-from sickbeard.helpers import make_dirs
-from sickbeard.name_cache import addNameToCache
-from sickbeard.postProcessor import PostProcessor
-from sickbeard.tv import TVEpisode, TVShow
-
-import tests.test_lib as test
+from sickchill import settings
+from sickchill.oldbeard.helpers import make_dirs
+from sickchill.oldbeard.name_cache import add_name
+from sickchill.oldbeard.postProcessor import PostProcessor
+from sickchill.tv import TVEpisode, TVShow
+from tests import test_lib as test
 
 
 class PPInitTests(unittest.TestCase):
@@ -63,7 +37,7 @@ class PPInitTests(unittest.TestCase):
         self.assertEqual(self.post_processor.folder_name, test.SHOW_NAME)
 
 
-class PPBasicTests(test.SickbeardTestDBCase):
+class PPBasicTests(test.SickChillTestDBCase):
     """
     Basic tests
     """
@@ -76,13 +50,13 @@ class PPBasicTests(test.SickbeardTestDBCase):
         show.location = test.SHOW_DIR
         show.saveToDB()
 
-        sickbeard.showList = [show]
+        settings.showList = [show]
         episode = TVEpisode(show, test.SEASON, test.EPISODE)
         episode.name = "some episode name"
         episode.saveToDB()
 
-        addNameToCache('show name', 3)
-        sickbeard.PROCESS_METHOD = 'move'
+        add_name('show name', 3)
+        settings.PROCESS_METHOD = 'move'
 
         post_processor = PostProcessor(test.FILE_PATH)
         self.assertTrue(post_processor.process())
@@ -90,24 +64,24 @@ class PPBasicTests(test.SickbeardTestDBCase):
 
 class ListAssociatedFiles(unittest.TestCase):
     def __init__(self, test_case):
-        super(ListAssociatedFiles, self).__init__(test_case)
+        super().__init__(test_case)
         self.test_tree = os.path.join('Show Name', 'associated_files', 'random', 'recursive', 'subdir')
 
         file_names = [
-            'Show Name [SickRage].avi',
-            'Show Name [SickRage].srt',
-            'Show Name [SickRage].nfo',
-            'Show Name [SickRage].en.srt',
-            'Non-Associated Show [SickRage].srt',
-            'Non-Associated Show [SickRage].en.srt',
-            'Show [SickRage] Non-Associated.en.srt',
-            'Show [SickRage] Non-Associated.srt',
+            'Show Name [SickChill].avi',
+            'Show Name [SickChill].srt',
+            'Show Name [SickChill].nfo',
+            'Show Name [SickChill].en.srt',
+            'Non-Associated Show [SickChill].srt',
+            'Non-Associated Show [SickChill].en.srt',
+            'Show [SickChill] Non-Associated.en.srt',
+            'Show [SickChill] Non-Associated.srt',
         ]
         self.file_list = [os.path.join('Show Name', f) for f in file_names] + [os.path.join(self.test_tree, f) for f in file_names]
         self.post_processor = PostProcessor('Show Name')
         self.maxDiff = None
-        sickbeard.MOVE_ASSOCIATED_FILES = True
-        sickbeard.ALLOWED_EXTENSIONS = u''
+        settings.MOVE_ASSOCIATED_FILES = True
+        settings.ALLOWED_EXTENSIONS = ''
 
     def setUp(self):
         make_dirs(self.test_tree)

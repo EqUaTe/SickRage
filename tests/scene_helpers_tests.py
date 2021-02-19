@@ -1,19 +1,13 @@
-# coding=utf-8
-"""
-Test scene helpers
-"""
-
-# pylint: disable=line-too-long
-
 import sys
 import unittest
 
-import tests.test_lib as test
-from sickbeard import common, db, name_cache, scene_exceptions, show_name_helpers
-from sickbeard.tv import TVShow as Show
+from sickchill import settings
+from sickchill.oldbeard import common, db, name_cache, scene_exceptions, show_name_helpers
+from sickchill.tv import TVShow as Show
+from tests import test_lib as test
 
 
-class SceneTests(test.SickbeardTestDBCase):
+class SceneTests(test.SickChillTestDBCase):
     """
     Test Scene
     """
@@ -26,23 +20,12 @@ class SceneTests(test.SickbeardTestDBCase):
         :param expected:
         :return:
         """
-        expected = [] if expected is None else expected
+        expected = expected or []
         show = Show(1, indexerid)
         show.name = name
 
         result = show_name_helpers.allPossibleShowNames(show)
         self.assertTrue(len(set(expected).intersection(set(result))) == len(expected))
-
-    def _test_filter_bad_releases(self, name, expected):
-        """
-        Test filter of bad releases
-
-        :param name:
-        :param expected:
-        :return:
-        """
-        result = show_name_helpers.filter_bad_releases(name)
-        self.assertEqual(result, expected)
 
     def test_all_possible_show_names(self):
         """
@@ -64,14 +47,16 @@ class SceneTests(test.SickbeardTestDBCase):
         """
         Test filtering of bad releases
         """
-        self._test_filter_bad_releases('Show.S02.German.Stuff-Grp', False)
-        self._test_filter_bad_releases('Show.S02.Some.Stuff-Core2HD', False)
-        self._test_filter_bad_releases('Show.S02.Some.German.Stuff-Grp', False)
-        # self._test_filter_bad_releases('German.Show.S02.Some.Stuff-Grp', True)
-        self._test_filter_bad_releases('Show.S02.This.Is.German', False)
+        settings.IGNORE_WORDS = 'GermaN'
+        settings.REQUIRE_WORDS = 'STUFF'
+        self.assertFalse(show_name_helpers.filter_bad_releases('Show.S02.German.Stuff-Grp'))
+        self.assertTrue(show_name_helpers.filter_bad_releases('Show.S02.Some.Stuff-Core2HD'))
+        self.assertFalse(show_name_helpers.filter_bad_releases('Show.S02.Some.German.Stuff-Grp'))
+        # self.assertTrue(show_name_helpers.filter_bad_releases('German.Show.S02.Some.Stuff-Grp'))
+        self.assertFalse(show_name_helpers.filter_bad_releases('Show.S02.This.Is.German'))
 
 
-class SceneExceptionTestCase(test.SickbeardTestDBCase):
+class SceneExceptionTestCase(test.SickChillTestDBCase):
     """
     Test scene exceptions test case
     """
@@ -79,7 +64,7 @@ class SceneExceptionTestCase(test.SickbeardTestDBCase):
         """
         Set up tests
         """
-        super(SceneExceptionTestCase, self).setUp()
+        super().setUp()
         scene_exceptions.retrieve_exceptions()
 
     def test_scene_ex_empty(self):
@@ -118,11 +103,11 @@ class SceneExceptionTestCase(test.SickbeardTestDBCase):
         test_cache_db_con.action("DELETE FROM scene_exceptions")
 
         # put something in the cache
-        name_cache.addNameToCache('Cached Name', 0)
+        name_cache.add_name('Cached Name', 0)
 
         # updating should not clear the cache this time since our exceptions didn't change
         scene_exceptions.retrieve_exceptions()
-        self.assertEqual(name_cache.retrieveNameFromCache('Cached Name'), 0)
+        self.assertEqual(name_cache.get_id_from_name('Cached Name'), 0)
 
 
 if __name__ == '__main__':

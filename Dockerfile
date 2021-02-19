@@ -1,39 +1,29 @@
-FROM python:2.7.13-alpine
+FROM python:3.8-alpine
+LABEL maintainer="miigotu@gmail.com"
+ENV PYTHONIOENCODING="UTF-8"
 
-ARG SICKRAGE_VERSION
+# docker run -dit --user 1000:1000 --name sickchill --restart=always \
+# -v ShowPath:/ShowPath \
+# -v DownloadPath:/DownloadPath \
+# -v /docker/sickchill/data:/data \
+# -v /docker/sickchill/cache/gui:/app/sickchill/sickchill/gui/slick/cache \
+# -v /etc/localtime:/etc/localtime:ro
+# -p 8080:8081 sickchill/sickchill
 
-ENV PID_FILE /var/run/sickrage/sickrage.pid
-ENV DATA_DIR /data
-ENV CONF_DIR /config/
-ENV PUID 1000
-ENV PGID 1000
+RUN apk add --update --no-cache git mediainfo unrar tzdata curl ca-certificates\
+ libffi libffi-dev libxml2 libxml2-dev libxslt libxslt-dev openssl openssl-dev\
+ gcc musl-dev python3-dev && apk add --update --no-cache --virtual .build-deps &&\
+ mkdir /app /var/run/sickchill
 
-RUN apk update && \
-    apk add git
+WORKDIR /app/sickchill
+VOLUME /data /downloads /tv
+COPY requirements.txt /app/sickchill
 
-RUN addgroup -g ${PGID} sickrage && \
-    adduser -u ${PUID} -D -S -G sickrage sickrage
+RUN CRYPTOGRAPHY_DONT_BUILD_RUST=1 pip install --no-cache-dir --no-input -Ur requirements.txt &&\
+ apk del .build-deps gcc libffi-dev libxml2-dev libxslt-dev openssl-dev musl-dev python3-dev
 
-RUN git config --global advice.detachedHead false && \
-    git clone --quiet https://github.com/SickRage/SickRage/ --branch $SICKRAGE_VERSION --single-branch --depth=1 /app/sickrage
+COPY . /app/sickchill
+RUN chmod -R 777 /app/sickchill
 
-RUN mkdir /var/run/sickrage/ && \
-    chown sickrage. /var/run/sickrage/ && \
-    mkdir /config/ && \
-    chown sickrage. /config && \
-    mkdir /data/ && \
-    chown sickrage. /data
-
-RUN echo '[General]' > /config/config.ini; if [ "$SICKRAGE_VERSION" = "master" ]; then echo 'auto_update = 1' >> /config/config.ini ; else echo 'auto_update = 0' >> /config/config.ini ; fi
-
-RUN if [ "$SICKRAGE_VERSION" = "master" ]; then chown -R sickrage. /app/sickrage/ ; fi
-
-VOLUME ["/config","/data"]
-
-USER sickrage
-
-WORKDIR /app/sickrage/
-
-CMD /usr/local/bin/python SickBeard.py -q --nolaunch --pidfile=${PID_FILE} --config=${CONF_DIR}/config.ini --datadir=${DATA_DIR} ${EXTRA_DAEMON_OPTS}
-
+CMD /usr/local/bin/python SickChill.py -q --nolaunch --datadir=/data --port 8081
 EXPOSE 8081

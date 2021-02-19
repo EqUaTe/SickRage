@@ -43,15 +43,15 @@ coverage:
 
     changes:                     # if there are any unexpected changes in coverage
       default:
-        enabled: yes             # must be yes|true to enable this status
+        enabled: no              # must be yes|true to enable this status
         branches: null           # -> see https://github.com/codecov/support/wiki/Filtering-Branches
         if_no_uploads: error
         if_not_found: success
         if_ci_failed: failure
 
     ignore:          # files and folders that will be removed during processing
-      - "tests/*"
-
+      - "tests"
+      - "lib3"
 parsers:
   gcov:
     branch_detection:
